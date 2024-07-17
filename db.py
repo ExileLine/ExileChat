@@ -35,6 +35,7 @@ TORTOISE_CONFIG = {
 aerich init -t db.TORTOISE_CONFIG
 aerich init-db
 
+aerich --app mysql_models init-db
 
 aerich migrate --name test
 aerich upgrade
