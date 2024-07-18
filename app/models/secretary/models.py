@@ -4,3 +4,29 @@
 # @Email   : yang6333yyx@126.com
 # @File    : models.py
 # @Software: PyCharm
+
+from tortoise import fields
+
+from common.libs.base_model import CustomBaseModel
+
+
+class Secretary(CustomBaseModel):
+    """助理"""
+
+    name = fields.CharField(max_length=255, null=True, description='名称')
+    introduce = fields.CharField(max_length=255, null=True, description='介绍')
+    definition = fields.TextField(null=True, description='定义-prompt')
+    llm_id = fields.BigIntField(null=True, description='大模型ID')
+    llm_option = fields.JSONField(null=True, description='大模型-模型选项')
+    quick_question = fields.JSONField(null=True, description='快捷提问列表')
+    answer_mode = fields.CharField(max_length=128, null=True, description='应答模式')
+    able_list = fields.JSONField(null=True, description='能力ids')
+    is_public = fields.SmallIntField(default=1, null=True, description='是否公开')
+    creator = fields.CharField(max_length=32, null=True, description="创建人")
+    creator_id = fields.BigIntField(null=True, description="创建人id")
+    modifier = fields.CharField(max_length=32, null=True, description='更新人')
+    modifier_id = fields.BigIntField(null=True, description='更新人id')
+    remark = fields.CharField(max_length=255, null=True, description='备注')
+
+    class Meta:
+        table = "ec_secretary"

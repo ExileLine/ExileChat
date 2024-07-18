@@ -8,9 +8,8 @@
 import bcrypt
 
 
-# 加密密码
 def hash_password(password: str) -> str:
-    """加密"""
+    """加密密码"""
 
     # 生成盐
     salt = bcrypt.gensalt()
@@ -19,7 +18,6 @@ def hash_password(password: str) -> str:
     return hashed.decode()
 
 
-# 验证密码
 def verify_password(password: str, hashed: str) -> bool:
     """验证密码"""
     return bcrypt.checkpw(password.encode(), hashed.encode())

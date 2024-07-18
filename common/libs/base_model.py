@@ -45,8 +45,8 @@ class CustomBaseModel(models.Model):
     create_timestamp = fields.BigIntField(default=int(time.time()), description='创建时间(时间戳)')
     update_time = CustomDatetimeField(description='更新时间(结构化时间)')
     update_timestamp = fields.BigIntField(null=True, description='更新时间(时间戳)')
-    is_deleted = fields.BigIntField(default=0, description='0正常;其他:已删除')
-    status = fields.IntField(default=1, description='状态')
+    is_deleted = fields.BigIntField(default=0, null=True, description='0正常;其他:已删除')
+    status = fields.IntField(default=1, null=True, description='状态')
 
     async def inject_save(self):
         """注入字段处理"""

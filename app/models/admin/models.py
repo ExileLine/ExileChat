@@ -41,7 +41,7 @@ class Admin(CustomBaseModel):
         return verify_password(raw_password, self.password)
 
     class Meta:
-        table = "msl_admin"
+        table = "ec_admin"
 
     class PydanticMeta:
         exclude = ["password"]
