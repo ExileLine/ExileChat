@@ -40,6 +40,8 @@ class QA(CustomBaseModel):
     CREATE INDEX ON ec_qa USING ivfflat (answer_embedding) WITH (lists = 100);
     """
 
+    able_id = fields.BigIntField(null=True, description='能力ID')
+    document_id = fields.BigIntField(null=True, description='文档ID')
     question = fields.TextField(null=True, description='问题')
     answer = fields.TextField(null=True, description='答案')
     question_embedding = VectorField(null=True, description='问题向量')
