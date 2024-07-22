@@ -13,7 +13,7 @@ from utils.db_connect import models_list
 TORTOISE_CONFIG = {
     "connections": {
         "default": postgres_db_url,
-        "mysql_db": mysql_db_url
+        # "mysql_db": mysql_db_url
     },
     "apps": {
         # "models": {
@@ -24,10 +24,10 @@ TORTOISE_CONFIG = {
             "models": models_list,
             "default_connection": "default",
         },
-        "mysql_models": {
-            "models": models_list,
-            "default_connection": "mysql_db",
-        }
+        # "mysql_models": {
+        #     "models": models_list,
+        #     "default_connection": "mysql_db",
+        # }
     },
 }
 

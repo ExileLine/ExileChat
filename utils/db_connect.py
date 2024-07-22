@@ -33,7 +33,10 @@ pg_db_url = "postgres://{}:{}@{}:{}/{}".format(
 models_list = [
     "aerich.models",
     "app.models.admin.models",
-    "app.models.qa.models"
+    "app.models.document.models",
+    "app.models.able.models",
+    "app.models.qa.models",
+    "app.models.secretary.models",
 ]
 
 TORTOISE_CONFIG = {

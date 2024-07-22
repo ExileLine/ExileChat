@@ -35,9 +35,21 @@ class VectorField(fields.Field):
 class QA(CustomBaseModel):
     """问答
 
-    -- 手动创建`ivfflat`索引
-    CREATE INDEX ON ec_qa USING ivfflat (question_embedding) WITH (lists = 100);
-    CREATE INDEX ON ec_qa USING ivfflat (answer_embedding) WITH (lists = 100);
+    安装`pgvector`扩展:
+        CREATE EXTENSION IF NOT EXISTS vector;
+
+    手动创建`ivfflat`索引(需要对应的字段指定了维度才能创建索引)
+
+    指定维度:
+        CREATE INDEX ON ec_qa USING ivfflat (question_embedding) WITH (lists = 1600);
+        CREATE INDEX ON ec_qa USING ivfflat (answer_embedding) WITH (lists = 1600);
+
+    创建索引:
+        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_question_embedding_ivfflat ON ec_qa
+            USING ivfflat (question_embedding vector_l2_ops);
+
+        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_answer_embedding_ivfflat ON ec_qa
+            USING ivfflat (answer_embedding vector_l2_ops);
     """
 
     able_id = fields.BigIntField(null=True, description='能力ID')

@@ -6,10 +6,12 @@
 # @Software: PyCharm
 
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, status
+from fastapi import APIRouter, WebSocket, Depends, status
 from fastapi.responses import HTMLResponse
 
 from common.libs.custom_exception import CustomException
+from utils.ai.llm_engine import LLMEngine
+from api_key import api_key
 
 chat_ws_router = APIRouter()
 
@@ -29,7 +31,7 @@ html = """
         </ul>
         <div id="error-message" style="color: red;"></div>
         <script>
-            const ws = new WebSocket("ws://0.0.0.0:7569/api/chat/ws/my_token");
+            const ws = new WebSocket("ws://0.0.0.0:7569/api/chat/ws/my_token/okc");
             ws.onmessage = function(event) {
                 console.log("aaa")
                 const messages = document.getElementById('messages');
@@ -66,7 +68,7 @@ async def get():
     return HTMLResponse(html)
 
 
-async def check_user(token):
+async def check_user(token) -> dict | bool:
     """验证用户身份-例子"""
 
     user = {
@@ -77,8 +79,17 @@ async def check_user(token):
     return user
 
 
-@chat_ws_router.websocket("/ws/{token}")
-async def chat(websocket: WebSocket, user: dict = Depends(check_user)):
+async def check_chat(chat_id) -> bool:
+    """验证对话"""
+
+    return True
+
+
+from test.log_data import prompt, content
+
+
+@chat_ws_router.websocket("/ws/{token}/{chat_id}")
+async def chat(websocket: WebSocket, token: str, chat_id: str, user: dict = Depends(check_user)):
     """对话"""
 
     await websocket.accept()
@@ -86,13 +97,26 @@ async def chat(websocket: WebSocket, user: dict = Depends(check_user)):
     if not user:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         print("鉴权验证失败 ws 关闭...")
-        raise CustomException(status_code=404, detail="鉴权验证失败...", custom_code=10005)
+        raise CustomException(status_code=403, detail="鉴权验证失败...", custom_code=10005)
 
     try:
+        # 测试代码
         while True:
             data = await websocket.receive_text()
-            await websocket.send_text(f"用户: {user} 消息: {data}")
+            await websocket.send_text(f"chat_id: {chat_id} 用户: {user} token: {token} 消息: {data}")
 
-    except WebSocketDisconnect:
-        print("客户端断开连接")
+            new_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key)
+            new_engine.system_prompt = "你是一名Python专家"
+            response_generator = new_engine.chat(input="Python是什么时候诞生的")
+
+            async for chunk in response_generator:
+                if isinstance(chunk, str):
+                    await websocket.send_text(chunk)
+                else:
+                    print(type(chunk), chunk)
+
+            await websocket.close()
+            break
+    except Exception as e:
+        print(f"WebSocket连接发生异常: {e}")
         await websocket.close()
