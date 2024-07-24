@@ -37,6 +37,7 @@ models_list = [
     "app.models.able.models",
     "app.models.qa.models",
     "app.models.secretary.models",
+    "app.models.chat.models",
 ]
 
 TORTOISE_CONFIG = {
