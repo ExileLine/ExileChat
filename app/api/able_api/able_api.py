@@ -35,7 +35,9 @@ class DeleteAbleReqData(BaseModel):
 
 
 class AblePage(CommonPage):
+    able_category_id: Union[int, None] = None
     name: str = "Able Name"
+    vector_llm_id: Union[int, None] = None
     creator_id: Union[int, None] = None
 
 
@@ -99,3 +101,17 @@ async def delete_able(request_data: DeleteAbleReqData, admin: Admin = Depends(ch
         }
         await able.update_from_dict(ud).save()
         return api_response()
+
+
+@able_router.post("/able_page")
+async def able_page(request_data: AblePage, admin: Admin = Depends(check_admin_existence)):
+    """Able列表"""
+
+    data = await cpq(
+        request_data, Able,
+        None,
+        ["name"],
+        ["creator_id"],
+        ["-update_time"]
+    )
+    return api_response(data=data)
