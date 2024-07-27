@@ -17,6 +17,7 @@ aerich = "*"
 bcrypt = "*"
 openai = "*"
 numpy = "*"
+python-dateutil = "*"
 
 [dev-packages]
 

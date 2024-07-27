@@ -63,9 +63,6 @@ async def create_able(request_data: CreateAbleReqData, admin: Admin = Depends(ch
     request_data.creator = admin.username
     save_data = request_data.dict()
     new_able = await Able.create(**save_data)
-    # new_able_pydantic = await Able_Pydantic.from_tortoise_orm(new_able)
-    # content = api_result(code=status.HTTP_201_CREATED, data=jsonable_encoder(new_able_pydantic))
-    # return JSONResponse(status_code=status.HTTP_201_CREATED, content=content)
     return api_response(http_code=status.HTTP_201_CREATED, code=201, data=jsonable_encoder(new_able))
 
 
@@ -83,9 +80,6 @@ async def update_able(request_data: UpdateAbleReqData, admin: Admin = Depends(ch
     update_data = request_data.dict()
     del update_data["id"]
     await able.update_from_dict(update_data).save()
-    # able_result = await Able_Pydantic.from_tortoise_orm(able)
-    # content = api_result(code=status.HTTP_200_OK, data=jsonable_encoder(able_result))
-    # return JSONResponse(status_code=status.HTTP_200_OK, content=content)
     return api_response(data=jsonable_encoder(able))
 
 

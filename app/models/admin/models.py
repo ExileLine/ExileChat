@@ -7,7 +7,7 @@
 
 from tortoise import fields
 
-from common.libs.base_model import CustomBaseModel, create_custom_pydantic_model
+from common.libs.base_model import CustomBaseModel
 from utils.password_context import hash_password, verify_password
 
 

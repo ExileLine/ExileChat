@@ -8,25 +8,24 @@
 
 from fastapi import APIRouter
 
+from app.api.admin_api.admin_login_api import admin_login_router
+from app.api.able_api.able_api import able_router
 from app.api.chat_ws.chat_ws import chat_ws_router
 
-api = APIRouter(
-    prefix="/api",
-    tags=["api"],
-    responses={
-        404: {"description": "Not found"}
-    },
-)
-
 # 一级路由
+api = APIRouter(prefix="/api", tags=["api"], responses={404: {"description": "Not found"}})
+ws = APIRouter(prefix="/ws", tags=["ws"])
+
+# 二级路由
 admin = APIRouter(prefix="/admin", tags=["后台"])
 front = APIRouter(prefix="/front", tags=["前台"])
 
-# 二级路由
-chat_uri = APIRouter(prefix="/chat", tags=["助手"])
-
 # 三级路由-后台
-chat_uri.include_router(chat_ws_router, tags=["对话"])
+admin.include_router(admin_login_router, prefix="/login", tags=["Admin登录"])
+admin.include_router(able_router, prefix="/able", tags=["后台能力"])
+front.include_router(able_router, prefix="/able", tags=["前台能力"])
 
 # 统一注册
-api.include_router(chat_uri)
+api.include_router(admin)
+api.include_router(front)
+ws.include_router(chat_ws_router, tags=["对话ws"])

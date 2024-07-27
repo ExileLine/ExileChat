@@ -29,6 +29,8 @@ TORTOISE_CONFIG = {
         #     "default_connection": "mysql_db",
         # }
     },
+    'use_tz': True,  # 确保 Tortoise 使用带时区的 datetime
+    'timezone': 'Asia/Shanghai',
 }
 
 """

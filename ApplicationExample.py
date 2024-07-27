@@ -21,7 +21,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 from tortoise import Tortoise
 
-from app.api import api
+from app.api import api, ws
 from config.config import get_config
 from utils.print_logs import print_logs, json_format
 from utils.db_connect import db_init, db_init_pg
@@ -240,6 +240,7 @@ def create_app():
 
     # 路由注册
     app.include_router(api)
+    app.include_router(ws)
 
     # 静态资源(生产环境通过配置获取路径)
     app.mount("/static", StaticFiles(directory="app/static"), name="static")
