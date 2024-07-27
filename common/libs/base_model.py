@@ -54,6 +54,10 @@ class CustomBaseModel(models.Model):
 
     def __getattribute__(self, name):
         value = super().__getattribute__(name)
+        if isinstance(value, datetime):  # 转换到 Asia/Shanghai 时区
+            shanghai_tz = pytz.timezone('Asia/Shanghai')
+            localized_value = value.astimezone(shanghai_tz)
+            return localized_value
         if isinstance(value, Decimal):
             return float(value)
         return value

@@ -8,6 +8,7 @@
 from pydantic import BaseModel
 from fastapi.encoders import jsonable_encoder
 
+from utils.utils import convert_to_standard_format
 from common.libs.common_page import page_size, query_result
 
 
@@ -53,7 +54,13 @@ async def cpq(request_data: BaseModel, Model, model_pydantic: BaseModel = None, 
     # 分页查询（同样带有相同查询条件）
     model_list = await Model.filter(**filter_conditions).offset(page).limit(size).order_by(*order_by_list)
 
-    # 将查询结果转换为 Pydantic 模型
+    for model in model_list:
+        if hasattr(model, "create_time"):
+            model.create_time = convert_to_standard_format(str(model.create_time))
+        if hasattr(model, "update_time"):
+            model.update_time = convert_to_standard_format(str(model.update_time))
+
+    # 将查询结果转换为 Pydantic 模型 (待弃用)
     if model_pydantic:
         model_list = [await model_pydantic.from_tortoise_orm(model) for model in model_list]
 
