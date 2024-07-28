@@ -18,6 +18,9 @@ bcrypt = "*"
 openai = "*"
 numpy = "*"
 python-dateutil = "*"
+python-docx = "*"
+pillow = "*"
+tabulate = "*"
 
 [dev-packages]
 
