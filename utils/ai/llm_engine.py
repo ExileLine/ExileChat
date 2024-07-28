@@ -91,6 +91,20 @@ class LLMEngine:
         else:
             return self.system_messages + self.messages
 
+    async def chat_only(self, prompt: str, input: str):
+        """一次对话"""
+
+        messages = [
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": input},
+        ]
+        completion = self.client.chat.completions.create(
+            model="gpt4o",
+            messages=messages,
+        )
+        result_content = completion.choices[0].message.content
+        return result_content
+
     async def chat(self, input: str):
         """对话"""
 

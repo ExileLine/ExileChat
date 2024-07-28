@@ -126,6 +126,7 @@ class DocumentChunk:
 
         result = self.generate_content(sorted_data)
         print(result)
+        return result
 
     @staticmethod
     def generate_content(sorted_data: dict) -> str:
