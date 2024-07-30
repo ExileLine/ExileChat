@@ -147,7 +147,7 @@ async def main():
     llm_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key)
 
     question = "1+1等于多少"
-    answer = "等于"
+    answer = "等于2"
     question_embedding = await llm_engine.embedding(text=question)
     answer_embedding = await llm_engine.embedding(text=answer)
     return question_embedding, answer_embedding
@@ -176,6 +176,8 @@ from utils.ai.document_vector import DocumentVector
 
 if __name__ == '__main__':
     is_debug = True
+    # 为何测试问答的精准，我使用了我的毕业论文作为测试，hhh。
+    # 你可以把下面 document_content = "1+1=2" 注释打开来进行测试。
     file_path = "/Users/yangyuexiong/Desktop/ExileChat/test/基于Python+Vue自动化测试平台的设计与实现.docx"
     dc = DocumentChunk(image_base_path="/Users/yangyuexiong/Desktop/ExileChat/test/test_ai", is_debug=is_debug)
     document_content = dc.process_file(file_path)
@@ -203,3 +205,7 @@ if __name__ == '__main__':
 ]
 """
 ```
+
+- 问题向量化通过数据库检索得到向量距离最相近的答案，结合大模型生成应答。
+- `补充中...`
+
