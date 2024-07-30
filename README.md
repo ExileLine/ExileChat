@@ -2,6 +2,8 @@
 
 ## AI知识库 - RAG流程基础功能实现
 
+- 基于`FastApi`与`tortoise-orm`等异步方式实现。
+
 ![RAG](docs/RAG.jpg)
 
 ### 文档切分
@@ -80,7 +82,7 @@ class LLMEngine:
 
 ```
 
-#### 多轮对话，流式响应。
+#### 多轮对话，流式响应
 
 ```python
 
