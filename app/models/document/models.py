@@ -17,6 +17,7 @@ class Document(CustomBaseModel):
     able_id = fields.BigIntField(null=True, description='能力ID')
     name = fields.CharField(max_length=255, null=True, description='名称')
     doc_suffix = fields.CharField(max_length=16, null=True, description='文档后缀')
+    doc_path = fields.CharField(max_length=255, null=True, description='文档访问路径')
     handle_status = fields.CharField(max_length=16, null=True, description='处理情况:ready;success;fail')
     creator = fields.CharField(max_length=32, null=True, description="创建人")
     creator_id = fields.BigIntField(null=True, description="创建人id")

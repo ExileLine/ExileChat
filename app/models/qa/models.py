@@ -58,6 +58,7 @@ class QA(CustomBaseModel):
     answer = fields.TextField(null=True, description='答案')
     question_embedding = VectorField(null=True, description='问题向量')
     answer_embedding = VectorField(dimension=1600, null=True, description='答案向量')
+    chunks = fields.JSONField(null=True, description='原文段落')
     like = fields.BigIntField(null=True, default=0, description='赞')
     dislike = fields.BigIntField(null=True, default=0, description='踩')
     creator = fields.CharField(max_length=32, null=True, description="创建人")
