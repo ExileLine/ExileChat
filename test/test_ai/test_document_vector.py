@@ -15,12 +15,14 @@ from utils.ai.document_chunk import DocumentChunk
 from utils.ai.document_vector import DocumentVector
 
 if __name__ == '__main__':
+    is_debug = True
     file_path = "/Users/yangyuexiong/Desktop/ExileChat/test/基于Python+Vue自动化测试平台的设计与实现.docx"
-    dc = DocumentChunk(image_base_path="/Users/yangyuexiong/Desktop/ExileChat/test/test_ai", is_debug=True)
-    document_content = dc.read_docx(file_path)
+    dc = DocumentChunk(image_base_path="/Users/yangyuexiong/Desktop/ExileChat/test/test_ai", is_debug=is_debug)
+    document_content = dc.process_file(file_path)
+
     # document_content = "1+1=2"
-    new_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key)
-    dv = DocumentVector(document_content=document_content, llm_engine=new_engine, prompt=prompt)
+    new_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key, is_debug=is_debug)
+    dv = DocumentVector(document_content=document_content, llm_engine=new_engine, prompt=prompt, is_debug=is_debug)
     qa_chunks_json = asyncio.run(dv.gen_qa_chunks())
     eb_result = asyncio.run(dv.gen_vector_qa_chunks(chunks=qa_chunks_json))
     print(json.dumps(qa_chunks_json, ensure_ascii=False))

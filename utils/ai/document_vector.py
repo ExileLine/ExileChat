@@ -19,24 +19,26 @@ class DocumentVector:
     4.把这些`QA chunks`向量写入数据库
     """
 
-    def __init__(self, document_content: str, llm_engine: LLMEngine, prompt: str):
+    def __init__(self, document_content: str, llm_engine: LLMEngine, prompt: str, is_debug: bool = False):
         self.document_content = document_content
         self.llm_engine = llm_engine
         self.prompt = prompt
+        self.is_debug = is_debug
 
     async def gen_qa_chunks(self):
         """生成`QA chunks`"""
 
         qa_chunks_str = await self.llm_engine.chat_only(prompt=self.prompt, input=self.document_content)
-        if qa_chunks_str:
+        if self.is_debug:
             print(type(qa_chunks_str), qa_chunks_str)
+        if qa_chunks_str:
             try:
                 qa_chunks_json = json.loads(qa_chunks_str)
                 return qa_chunks_json
             except BaseException as e:
                 raise TypeError(f"qa_chunks JSON序列化失败：{e}")
         else:
-            raise TypeError(f"qa_chunks JSON序列化失败2")
+            raise TypeError(f"生成 qa_chunks_str 出现异常")
 
     async def gen_vector_qa_chunks(self, chunks: list[dict]) -> list[dict]:
         """生成`QA chunks`向量"""
@@ -46,6 +48,7 @@ class DocumentVector:
         for chunk in chunks:
             question = chunk.get("Q")
             answer = chunk.get("A")
+            chunks = chunk.get("chunks")
             question_embedding = await self.llm_engine.embedding(text=question)
             answer_embedding = await self.llm_engine.embedding(text=answer)
 
@@ -54,6 +57,7 @@ class DocumentVector:
                 "document_id": 0,
                 "answer": answer,
                 "question": question,
+                "chunks": chunks,
                 "question_embedding": json.dumps(question_embedding, ensure_ascii=False),
                 "answer_embedding": json.dumps(answer_embedding, ensure_ascii=False)
             }

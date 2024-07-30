@@ -92,7 +92,9 @@ class DocumentChunk:
                         else:
                             raise AttributeError("属性 image_base_path 与 image_base_url 必须要其中一个")
 
-                        print(image_filename)
+                        if self.is_debug:
+                            print(image_filename)
+
                         image_dict[set_image_index] = {"type": "image", "content": image_filename}
                         paragraph_index.append(set_image_index)
                         image_counter += 1
@@ -127,7 +129,10 @@ class DocumentChunk:
                 print(key, value)
 
         result = self.generate_content(sorted_data)
-        print(result)
+
+        if self.is_debug:
+            print(result)
+
         return result
 
     @staticmethod
@@ -153,7 +158,6 @@ class DocumentChunk:
 
         if not file_ext:
             file_ext = os.path.splitext(file_path)[1].lower()
-            print(file_ext)
 
         if file_ext == ".docx":
             result = self.read_docx(file_path)

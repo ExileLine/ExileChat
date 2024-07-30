@@ -15,7 +15,7 @@ from utils.ai.document_vector import DocumentVector
 
 class ProcessVector:
 
-    def __init__(self, document: Document, llm_engine: LLMEngine):
+    def __init__(self, document: Document, llm_engine: LLMEngine, is_debug: bool = False):
         """
 
         :param document: 文档模型对象 例如 `document = await Document.get_or_none(id=document_id)`
@@ -23,20 +23,26 @@ class ProcessVector:
         """
         self.document = document
         self.llm_engine = llm_engine
+        self.is_debug = is_debug
         self.document_content = None  # 处理完毕的文档字符串
         self.vectored_qa_chunks = None  # 处理完毕的文档QA向量对象 -> list[dicy]
 
     async def call_dc(self):
         """调用`DocumentChunk`生成文档字符串"""
 
-        dc = DocumentChunk(image_base_path="/Users/yangyuexiong/Desktop/ExileChat/test/test_ai", is_debug=True)
+        dc = DocumentChunk(image_base_path="/Users/yangyuexiong/Desktop/ExileChat/test/test_ai", is_debug=self.is_debug)
         self.document_content = dc.process_file(file_path=self.document.doc_path, file_ext=self.document.doc_suffix)
         return self.document_content
 
     async def call_dv(self):
         """调用`DocumentVector`生成文档向量"""
 
-        dv = DocumentVector(document_content=self.document_content, llm_engine=self.llm_engine, prompt=prompt)
+        dv = DocumentVector(
+            document_content=self.document_content,
+            llm_engine=self.llm_engine,
+            prompt=prompt,
+            is_debug=self.is_debug
+        )
         qa_chunks = await dv.gen_qa_chunks()
         self.vectored_qa_chunks = await dv.gen_vector_qa_chunks(chunks=qa_chunks)
         return self.vectored_qa_chunks
@@ -48,7 +54,8 @@ class ProcessVector:
             for index, qa in enumerate(self.vectored_qa_chunks):
                 remark = f"遍历索引_{index}"
                 qa["remark"] = remark
-                print(remark)
+                if self.is_debug:
+                    print(remark)
                 await QA.create(**qa)
 
     async def main(self):
