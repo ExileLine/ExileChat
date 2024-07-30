@@ -51,9 +51,10 @@ class ModelClient:
 class LLMEngine:
     """Large Language Models Engine"""
 
-    def __init__(self, model_name: str = None, api_key: str = None, *args, **kwargs):
+    def __init__(self, model_name: str = None, api_key: str = None, is_debug: bool = False, *args, **kwargs):
         self.model_name = model_name
         self.api_key = api_key
+        self.is_debug = is_debug
         self.args = args
         self.kwargs = kwargs
 
@@ -62,6 +63,7 @@ class LLMEngine:
         self.client_dict = {
             "open_ai": ModelClient.open_ai,
             "azure_open_ai": ModelClient.azure_open_ai,
+            "moonshot": ModelClient.moonshot,
         }
         self.client = self.client_init()
 
@@ -102,8 +104,13 @@ class LLMEngine:
             model="gpt4o",
             messages=messages,
         )
-        result_content = completion.choices[0].message.content
-        return result_content
+        if completion and completion.choices and len(completion.choices) > 0:
+            print("API 调用成功")
+            generated_message = completion.choices[0].message.content
+            return generated_message
+        else:
+            print("API 调用失败")
+            return False
 
     async def chat(self, input: str):
         """对话"""
@@ -115,9 +122,6 @@ class LLMEngine:
             messages=self.messages,
             stream=True
         )
-        # stream=False
-        # print(completion.choices[0].message)
-        # print(completion.choices[0].message.content)
 
         current_content = ""
         for chunk in completion:
@@ -134,15 +138,23 @@ class LLMEngine:
             "content": current_content,
         })
 
-    async def call_embedding(self, text, *args, **kwargs):
+    async def embedding(self, text, *args, **kwargs):
         """向量"""
 
-        if self.model_name in ():
-            pass
-        else:
-            response = self.client.embeddings.create(
-                model="embedding002",
-                input=text
-            )
-        print(response)
+        response = self.client.embeddings.create(
+            model="embedding002",
+            input=text
+        )
+        if self.is_debug:
+            print(response.data[0].embedding)
         return response.data[0].embedding
+
+        # if self.model_name in ():
+        #     pass
+        # else:
+        #     response = self.client.embeddings.create(
+        #         model="embedding002",
+        #         input=text
+        #     )
+        # print(response)
+        # return response.data[0].embedding
