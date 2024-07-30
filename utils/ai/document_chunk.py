@@ -11,6 +11,7 @@ import base64
 from io import BytesIO
 from collections import OrderedDict
 
+import shortuuid
 from docx import Document
 from docx.oxml.ns import qn
 from tabulate import tabulate
@@ -24,8 +25,8 @@ class DocumentChunk:
     """文档切片分块"""
 
     def __init__(self, image_base_path: str = None, image_base_url: str = None, is_debug: bool = False):
-        self.image_base_path = image_base_path  # 磁盘存储目录路径
-        self.image_base_url = image_base_url  # 图片服务器域名路径或静态资源路径
+        self.image_base_path = image_base_path  # 图片存储磁盘目录路径
+        self.image_base_url = image_base_url  # 图片存储服务器域名路径或静态资源路径
         self.is_debug = is_debug
 
         if not self.image_base_path and self.image_base_url:
@@ -79,14 +80,15 @@ class DocumentChunk:
                         image_part = doc.part.related_parts[rId]
                         image_bytes = image_part.blob
                         image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                        custom_image_name = f"/docx_image_{shortuuid.uuid()}_{image_counter}.png"
 
                         if self.image_base_path:
-                            image_filename = self.image_base_path + f"/docx_image_{image_counter}.png"
+                            image_filename = self.image_base_path + custom_image_name
                             with open(image_filename, 'wb') as image_file:
                                 image_file.write(image_bytes)
                         elif self.image_base_url:
                             # TODO 补充上传图片服务逻辑
-                            image_filename = self.image_base_url + f"/docx_image_{image_counter}.png"
+                            image_filename = self.image_base_url + custom_image_name
                         else:
                             raise AttributeError("属性 image_base_path 与 image_base_url 必须要其中一个")
 
@@ -146,17 +148,20 @@ class DocumentChunk:
                 result += f"{data_content}\n"
         return result
 
-    def process_file(self, file_path):
+    def process_file(self, file_path: str, file_ext: str = None):
         """主函数"""
 
-        file_ext = os.path.splitext(file_path)[1].lower()
-        print(file_ext)
+        if not file_ext:
+            file_ext = os.path.splitext(file_path)[1].lower()
+            print(file_ext)
 
         if file_ext == ".docx":
-            self.read_docx(file_path)
+            result = self.read_docx(file_path)
         elif file_ext in [".xls", ".xlsx"]:
-            self.read_excel(file_path)
+            result = self.read_excel(file_path)
         elif file_ext == ".pdf":
-            self.read_pdf(file_path)
+            result = self.read_pdf(file_path)
         else:
             raise ValueError(f"不支持的文件格式: {file_ext}")
+
+        return result
