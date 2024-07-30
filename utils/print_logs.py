@@ -38,9 +38,13 @@ async def print_logs(request):
     method = request.method
     path = request.url.path
     headers = {t[0]: t[1] for t in request.headers.items()}
+    is_multipart = headers.get("content-type", "").startswith("multipart/form-data")
 
     params = request.query_params
-    form_data = await request.form()
+    if is_multipart:
+        form_data = {}
+    else:
+        form_data = await request.form()
 
     if method != "GET":
         try:
