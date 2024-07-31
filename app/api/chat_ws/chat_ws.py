@@ -85,10 +85,7 @@ async def check_chat(chat_id) -> bool:
     return True
 
 
-from test.log_data import prompt, content
-
-
-@chat_ws_router.websocket("/ws/{token}/{chat_id}")
+@chat_ws_router.websocket("/{token}/{chat_id}")
 async def chat(websocket: WebSocket, token: str, chat_id: str, user: dict = Depends(check_user)):
     """对话"""
 
@@ -105,9 +102,10 @@ async def chat(websocket: WebSocket, token: str, chat_id: str, user: dict = Depe
             data = await websocket.receive_text()
             await websocket.send_text(f"chat_id: {chat_id} 用户: {user} token: {token} 消息: {data}")
 
-            new_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key)
-            new_engine.system_prompt = "你是一名Python专家"
-            response_generator = new_engine.chat(input="Python是什么时候诞生的")
+            # 测试代码
+            llm_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key)
+            llm_engine.system_prompt = "你是一名Python专家"
+            response_generator = llm_engine.chat(input="Python是什么时候诞生的")
 
             async for chunk in response_generator:
                 if isinstance(chunk, str):
