@@ -14,7 +14,8 @@ async def main():
     """main"""
 
     new_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key)
-    await new_engine.chat_only(prompt="你是强大的人工智能", input="你是谁?")
+    generated_message = await new_engine.chat_only(prompt="你是强大的人工智能", input="你是谁?")
+    print(generated_message)
 
 
 if __name__ == "__main__":
