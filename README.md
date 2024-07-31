@@ -31,7 +31,7 @@ if __name__ == "__main__":
 ### 大模型调用
 
 - 你需要查阅对应大模型的文档以及准备`api_key`，按照例子来使用它。
-- 当前仅支持`OpenAI`，`AzureOpenAI`，`Moonshot`，当然你可以自行添加，你需要根据以下代码示例实现对应的初始化工作。
+- 当前仅支持`OpenAI`，`AzureOpenAI`，`Moonshot`，当然你可以自行添加其他模型，你需要根据以下代码示例实现对应的初始化工作。
 
 ```python
 
@@ -79,6 +79,48 @@ class LLMEngine:
             "moonshot": ModelClient.moonshot,
         }
         ...
+
+```
+- 当然也提供了`websocket`与模型对话应答
+
+```python
+
+# /Users/yangyuexiong/Desktop/ExileChat/app/api/chat_ws/chat_ws.py
+
+# 代码片段
+# 把鉴权删除，替换模型与提示词即可。
+@chat_ws_router.websocket("/{token}/{chat_id}")
+async def chat(websocket: WebSocket, token: str, chat_id: str, user: dict = Depends(check_user)):
+    """对话"""
+
+    await websocket.accept()
+
+    if not user:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        print("鉴权验证失败 ws 关闭...")
+        raise CustomException(status_code=403, detail="鉴权验证失败...", custom_code=10005)
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # await websocket.send_text(f"chat_id: {chat_id} 用户: {user} token: {token} 消息: {data}")
+
+            # 测试代码
+            llm_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key)
+            llm_engine.system_prompt = "你是一名Python专家"
+            response_generator = llm_engine.chat(input=data)
+
+            async for chunk in response_generator:
+                if isinstance(chunk, str):
+                    await websocket.send_text(chunk)
+                else:
+                    print(type(chunk), chunk)
+
+            await websocket.close()
+            break
+    except Exception as e:
+        print(f"WebSocket连接发生异常: {e}")
+        await websocket.close()
 
 ```
 
@@ -179,77 +221,76 @@ from utils.ai.llm_engine import LLMEngine
 from utils.ai.document_chunk import DocumentChunk
 from utils.ai.document_vector import DocumentVector
 
-if __name__ == '__main__':
-    """
-    文档向量
-    1.接收已经处理好的文档字符串。
-    
-        通过`from utils.ai.document_chunk import DocumentChunk`文档规整生成文档字符串，当然你可以使用其他更好方式生成它。
-    
-    2.接收大模型引擎`LLMEngine`实例，例如以下使用了`azure_open_ai`作为模型。
-        
-        llm_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key, is_debug=is_debug)
-        
-    3.使用`LLMEngine`结合`prompt`文档生成`chunks`，同时`self.chunks`也会被赋值，如果你需要自定义可以修改它`self.chunks=[...]`
-    
-        dv = DocumentVector(...)
-        dv.gen_chunks()
-        
-        *.得到例如以下结构的数据，自定义时需要按照以下数据结构。
-        [
-            {
-                "index": 1,
-                "chunk": "段落1"
-            },
-            {
-                "index": 2,
-                "chunk": "段落2"
-            }
-            ...
-        ]
-        
-    4.使用`LLMEngine`结合`prompt`对段落生成`QA`，同时`self.qa`也会被赋值，如果你需要自定义可以修改它`self.qa=[...]`
-    
-        dv.gen_qa()
-        
-        *.得到例如以下结构的数据，自定义时需要按照以下数据结构。
-        [
-            {
-                "Q": "什么是 Python 中的协程？",
-                "A": "Python 中的协程是一种用于实现异步编程的机制，它允许程序在等待操作完成时挂起执行，从而可以执行其他任务。",
-                "chunks": [
-                    "Python 中的协程是一种用于实现异步编程的机制，它允许程序在等待操作完成时挂起执行，从而可以执行其他任务。"
-                ]
-            },
-            {
-                "Q": "协程在 Python 中的作用是什么？",
-                "A": "协程是 Python 语言中的一个特性，用于编写更高效和响应更快的代码。",
-                "chunks": [
-                    "协程是 Python 语言中的一个特性，用于编写更高效和响应更快的代码。"
-                ]
-            },
-            ...
-        ]
-        
-    5.生成`QA`向量。
-    
-        dv.gen_qa_vector()
-        
-        *.最终会得到一个组装好的对象列表，例如以下结构的数据。
-        [
-            {
-                'able_id': 0,
-                'document_id': 0,
-                'answer': '1+1等于2',
-                'question': '1+1等于几？',
-                'chunks': ["1+1=2", "..."],
-                'answer_embedding': [0.02715362422168255, -0.010939446277916431, 0.006153851747512817, -0.009505090303719044, ...],
-                'question_embedding': [0.02715362422168255, -0.010939446277916431, 0.006153851747512817, -0.009505090303719044, ...],
-            },
-            ...
-        ]
-    """
+"""
+文档向量
+1.接收已经处理好的文档字符串。
 
+    通过`from utils.ai.document_chunk import DocumentChunk`文档规整生成文档字符串，当然你可以使用其他更好方式生成它。
+
+2.接收大模型引擎`LLMEngine`实例，例如以下使用了`azure_open_ai`作为模型。
+    
+    llm_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key, is_debug=is_debug)
+    
+3.使用`LLMEngine`结合`prompt`文档生成`chunks`，同时`self.chunks`也会被赋值，如果你需要自定义可以修改它`self.chunks=[...]`
+
+    dv = DocumentVector(...)
+    dv.gen_chunks()
+    
+    *.得到例如以下结构的数据，自定义时需要按照以下数据结构。
+    [
+        {
+            "index": 1,
+            "chunk": "段落1"
+        },
+        {
+            "index": 2,
+            "chunk": "段落2"
+        }
+        ...
+    ]
+    
+4.使用`LLMEngine`结合`prompt`对段落生成`QA`，同时`self.qa`也会被赋值，如果你需要自定义可以修改它`self.qa=[...]`
+
+    dv.gen_qa()
+    
+    *.得到例如以下结构的数据，自定义时需要按照以下数据结构。
+    [
+        {
+            "Q": "什么是 Python 中的协程？",
+            "A": "Python 中的协程是一种用于实现异步编程的机制，它允许程序在等待操作完成时挂起执行，从而可以执行其他任务。",
+            "chunks": [
+                "Python 中的协程是一种用于实现异步编程的机制，它允许程序在等待操作完成时挂起执行，从而可以执行其他任务。"
+            ]
+        },
+        {
+            "Q": "协程在 Python 中的作用是什么？",
+            "A": "协程是 Python 语言中的一个特性，用于编写更高效和响应更快的代码。",
+            "chunks": [
+                "协程是 Python 语言中的一个特性，用于编写更高效和响应更快的代码。"
+            ]
+        },
+        ...
+    ]
+    
+5.生成`QA`向量。
+
+    dv.gen_qa_vector()
+    
+    *.最终会得到一个组装好的对象列表，例如以下结构的数据。
+    [
+        {
+            'able_id': 0,
+            'document_id': 0,
+            'answer': '1+1等于2',
+            'question': '1+1等于几？',
+            'chunks': ["1+1=2", "..."],
+            'answer_embedding': [0.02715362422168255, -0.010939446277916431, 0.006153851747512817, -0.009505090303719044, ...],
+            'question_embedding': [0.02715362422168255, -0.010939446277916431, 0.006153851747512817, -0.009505090303719044, ...],
+        },
+        ...
+    ]
+"""
+if __name__ == '__main__':
     is_debug = True
     # 为何测试问答的精准，我使用了我的毕业论文作为测试，hhh。
     # 你可以把下面 document_content = "1+1=2" 注释打开来进行测试。
