@@ -19,7 +19,7 @@ class DocumentVector:
     2.接收大模型引擎`LLMEngine`实例
     3.使用`LLMEngine`结合`prompt`文档生成`chunks`
     4.使用`LLMEngine`结合`prompt`对段落生成`QA`
-    5.把这些`chunks`与`QA`向量写入数据库
+    5.生成`QA`向量写入数据库
     """
 
     def __init__(self, document_content: str, llm_engine: LLMEngine, prompt: str = chunks_prompt,

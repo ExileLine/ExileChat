@@ -129,7 +129,8 @@ async def main():
     """main"""
 
     new_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key)
-    await new_engine.chat_only(prompt="你是强大的人工智能", input="你是谁?")
+    generated_message = await new_engine.chat_only(prompt="你是强大的人工智能", input="你是谁?")
+    print(generated_message)
 
 
 if __name__ == "__main__":
@@ -171,45 +172,100 @@ if __name__ == "__main__":
 
 # /ExileChat/test/test_ai/test_document_vector.py
 
-import json
 import asyncio
 
 from api_key import api_key
-from utils.ai.prompt.qa_prompt import prompt
 from utils.ai.llm_engine import LLMEngine
 from utils.ai.document_chunk import DocumentChunk
 from utils.ai.document_vector import DocumentVector
 
 if __name__ == '__main__':
+    """
+    文档向量
+    1.接收已经处理好的文档字符串。
+    
+        通过`from utils.ai.document_chunk import DocumentChunk`文档规整生成文档字符串，当然你可以使用其他更好方式生成它。
+    
+    2.接收大模型引擎`LLMEngine`实例，例如以下使用了`azure_open_ai`作为模型。
+        
+        llm_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key, is_debug=is_debug)
+        
+    3.使用`LLMEngine`结合`prompt`文档生成`chunks`，同时`self.chunks`也会被赋值，如果你需要自定义可以修改它`self.chunks=[...]`
+    
+        dv = DocumentVector(...)
+        dv.gen_chunks()
+        
+        *.得到例如以下结构的数据，自定义时需要按照以下数据结构。
+        [
+            {
+                "index": 1,
+                "chunk": "段落1"
+            },
+            {
+                "index": 2,
+                "chunk": "段落2"
+            }
+            ...
+        ]
+        
+    4.使用`LLMEngine`结合`prompt`对段落生成`QA`，同时`self.qa`也会被赋值，如果你需要自定义可以修改它`self.qa=[...]`
+    
+        dv.gen_qa()
+        
+        *.得到例如以下结构的数据，自定义时需要按照以下数据结构。
+        [
+            {
+                "Q": "什么是 Python 中的协程？",
+                "A": "Python 中的协程是一种用于实现异步编程的机制，它允许程序在等待操作完成时挂起执行，从而可以执行其他任务。",
+                "chunks": [
+                    "Python 中的协程是一种用于实现异步编程的机制，它允许程序在等待操作完成时挂起执行，从而可以执行其他任务。"
+                ]
+            },
+            {
+                "Q": "协程在 Python 中的作用是什么？",
+                "A": "协程是 Python 语言中的一个特性，用于编写更高效和响应更快的代码。",
+                "chunks": [
+                    "协程是 Python 语言中的一个特性，用于编写更高效和响应更快的代码。"
+                ]
+            },
+            ...
+        ]
+        
+    5.生成`QA`向量。
+    
+        dv.gen_qa_vector()
+        
+        *.最终会得到一个组装好的对象列表，例如以下结构的数据。
+        [
+            {
+                'able_id': 0,
+                'document_id': 0,
+                'answer': '1+1等于2',
+                'question': '1+1等于几？',
+                'chunks': ["1+1=2", "..."],
+                'answer_embedding': [0.02715362422168255, -0.010939446277916431, 0.006153851747512817, -0.009505090303719044, ...],
+                'question_embedding': [0.02715362422168255, -0.010939446277916431, 0.006153851747512817, -0.009505090303719044, ...],
+            },
+            ...
+        ]
+    """
+
     is_debug = True
     # 为何测试问答的精准，我使用了我的毕业论文作为测试，hhh。
     # 你可以把下面 document_content = "1+1=2" 注释打开来进行测试。
-    file_path = "/Users/yangyuexiong/Desktop/ExileChat/test/基于Python+Vue自动化测试平台的设计与实现.docx"
+    # file_path = "/Users/yangyuexiong/Desktop/ExileChat/test/基于Python+Vue自动化测试平台的设计与实现.docx"
+    file_path = "/Users/yangyuexiong/Desktop/ExileChat/test/测试文档分段.docx"
     dc = DocumentChunk(image_base_path="/Users/yangyuexiong/Desktop/ExileChat/test/test_ai", is_debug=is_debug)
     document_content = dc.process_file(file_path)
 
     # document_content = "1+1=2"
-    new_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key, is_debug=is_debug)
-    dv = DocumentVector(document_content=document_content, llm_engine=new_engine, prompt=prompt, is_debug=is_debug)
-    qa_chunks_json = asyncio.run(dv.gen_qa_chunks())
-    eb_result = asyncio.run(dv.gen_vector_qa_chunks(chunks=qa_chunks_json))
-    print(json.dumps(qa_chunks_json, ensure_ascii=False))
 
-"""
-最终会得到一个组装好的对象列表，例如以下结构的数据
-[
-    {
-        'able_id': 0,
-        'document_id': 0,
-        'answer': '1+1等于2',
-        'question': '1+1等于几？',
-        'chunks': ["1+1=2", "..."],
-        'answer_embedding': [0.02715362422168255, -0.010939446277916431, 0.006153851747512817, -0.009505090303719044, ...],
-        'question_embedding': [0.02715362422168255, -0.010939446277916431, 0.006153851747512817, -0.009505090303719044, ...],
-    },
-    ...
-]
-"""
+    llm_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key, is_debug=is_debug)
+    dv = DocumentVector(document_content=document_content, llm_engine=llm_engine, is_debug=is_debug)
+    asyncio.run(dv.gen_chunks())
+    asyncio.run(dv.gen_qa())
+    asyncio.run(dv.gen_qa_vector())
+
 ```
 
 ### 向量化应答
