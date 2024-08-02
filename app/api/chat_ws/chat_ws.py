@@ -102,7 +102,8 @@ async def chat(websocket: WebSocket):
     token = query_params.get("token")
     chat_id = query_params.get("chat_id", None)
 
-    if not await check_user(token):
+    user = await check_user(token)
+    if not user:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         print("鉴权验证失败 ws 关闭...")
         raise CustomException(status_code=403, detail="鉴权验证失败...", custom_code=10005)
@@ -110,7 +111,7 @@ async def chat(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_text()
-            await websocket.send_text(f"chat_id: {chat_id} 用户: {user} token: {token} 消息: {data}\n")
+            await websocket.send_text(f"用户: {user} token: {token} 对话: {chat_id} 消息: {data}\n")
 
             llm_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key)
             llm_engine.system_prompt = "你是一名Python专家"
