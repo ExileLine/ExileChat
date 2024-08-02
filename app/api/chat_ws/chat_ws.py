@@ -5,12 +5,14 @@
 # @File    : chat_ws.py
 # @Software: PyCharm
 
+from asyncio import sleep
 
 from fastapi import APIRouter, WebSocket, Depends, status
 from fastapi.responses import HTMLResponse
 
 from common.libs.custom_exception import CustomException
 from utils.ai.llm_engine import LLMEngine
+from app.models.chat.models import Chat
 from api_key import api_key
 
 chat_ws_router = APIRouter()
@@ -79,36 +81,44 @@ async def check_user(token) -> dict | bool:
     return user
 
 
-async def check_chat(chat_id) -> bool:
-    """验证对话"""
+async def get_chat(chat_id) -> bool:
+    """获取对话历史记录"""
 
+    query_chat = await Chat.get_or_none(id=chat_id)
+    if not query_chat:
+        return False
+
+    # TODO 补充业务逻辑
     return True
 
 
-@chat_ws_router.websocket("/{token}/{chat_id}")
-async def chat(websocket: WebSocket, token: str, chat_id: str, user: dict = Depends(check_user)):
+@chat_ws_router.websocket("/chat")
+async def chat(websocket: WebSocket):
     """对话"""
 
     await websocket.accept()
 
-    if not user:
+    query_params = websocket.query_params
+    token = query_params.get("token")
+    chat_id = query_params.get("chat_id", None)
+
+    if not await check_user(token):
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         print("鉴权验证失败 ws 关闭...")
         raise CustomException(status_code=403, detail="鉴权验证失败...", custom_code=10005)
 
     try:
-        # 测试代码
         while True:
             data = await websocket.receive_text()
-            await websocket.send_text(f"chat_id: {chat_id} 用户: {user} token: {token} 消息: {data}")
+            await websocket.send_text(f"chat_id: {chat_id} 用户: {user} token: {token} 消息: {data}\n")
 
-            # 测试代码
             llm_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key)
             llm_engine.system_prompt = "你是一名Python专家"
-            response_generator = llm_engine.chat(input="Python是什么时候诞生的")
+            response_generator = llm_engine.chat(input=data)
 
             async for chunk in response_generator:
                 if isinstance(chunk, str):
+                    await sleep(0.1)
                     await websocket.send_text(chunk)
                 else:
                     print(type(chunk), chunk)
