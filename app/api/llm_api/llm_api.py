@@ -16,9 +16,11 @@ llm_router = APIRouter()
 
 class CreateLLMReqData(CommonPydanticCreate):
     category_id: int = 1
-    name: str = "LLM"
+    name: str = "hello"
     api_key: str = "api_key"
-    options: list[dict]
+    model_list: list[dict]
+    engine_key: str
+    client_options: list[dict]
     is_public: int = 1
 
 
@@ -26,7 +28,9 @@ class UpdateLLMReqData(CommonPydanticUpdate):
     category_id: int
     name: str
     api_key: str
-    options: list[dict]
+    model_list: list[dict]
+    engine_key: str
+    client_options: list[dict]
     is_public: int
 
 
@@ -76,6 +80,7 @@ async def create_llm(request_data: CreateLLMReqData, admin: Admin = Depends(chec
     request_data.creator_id = admin.id
     request_data.creator = admin.username
     save_data = request_data.dict()
+    save_data["company_name"] = llm_category.name
     new_llm = await LLM.create(**save_data)
     return api_response(http_code=status.HTTP_201_CREATED, code=201, data=jsonable_encoder(new_llm))
 
@@ -98,6 +103,7 @@ async def update_llm(request_data: UpdateLLMReqData, admin: Admin = Depends(chec
     request_data.modifier_id = admin.id
     request_data.modifier = admin.username
     update_data = request_data.dict()
+    update_data["company_name"] = llm_category.name
     del update_data["id"]
     await llm.update_from_dict(update_data).save()
     return api_response(data=jsonable_encoder(llm))

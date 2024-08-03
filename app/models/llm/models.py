@@ -30,9 +30,12 @@ class LLM(CustomBaseModel):
     """大型语言模型"""
 
     category_id = fields.BigIntField(null=True, description='分类ID')
-    name = fields.CharField(max_length=255, null=True, description='模型名称')
-    api_key = fields.CharField(max_length=255, null=True, description='模型api_key')
-    options = fields.JSONField(null=True, description='扩展参数选项')
+    name = fields.CharField(max_length=255, null=True, description='自定义名称')
+    company_name = fields.CharField(max_length=255, null=True, description='厂商')
+    api_key = fields.CharField(max_length=255, null=True, description='厂商api_key')
+    model_list = fields.JSONField(null=True, description='模型列表')
+    engine_key = fields.CharField(max_length=64, null=True, description='LLMEngine类实例化字典Key')
+    client_options = fields.JSONField(null=True, description='模型实例化参数')
     is_public = fields.SmallIntField(default=1, null=True, description='是否公开')
     creator = fields.CharField(max_length=32, null=True, description="创建人")
     creator_id = fields.BigIntField(null=True, description="创建人id")
