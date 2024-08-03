@@ -17,6 +17,7 @@ class Chat(CustomBaseModel):
     name = fields.CharField(max_length=255, null=True, description='对话名称')
     option_json = fields.JSONField(null=True, description='对话选项对象')
     chat_type = fields.CharField(max_length=32, null=True, description='对话类型:normal;able')
+    secretary_id = fields.BigIntField(null=True, description='助手ID')
     able_id = fields.BigIntField(null=True, description='能力ID')
     prompt = fields.TextField(null=True, description='提示词')
     use_prompt = fields.SmallIntField(null=True, default=0, description='是否使用自定义提示词')
