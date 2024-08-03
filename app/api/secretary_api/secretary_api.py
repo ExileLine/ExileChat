@@ -9,7 +9,8 @@
 from all_reference import *
 from app.models.admin.models import Admin
 from app.models.secretary.models import Secretary
-from app.api.secretary_api.common import query_secretary_category, query_llm, query_able_list, AnswerMode
+from app.api.secretary_api.common import query_secretary_category, query_llm, query_able_list, check_model_name, \
+    AnswerMode
 
 secretary_router = APIRouter()
 
@@ -21,6 +22,7 @@ class CreateSecretaryReqData(CommonPydanticCreate):
     introduce: str = "助手介绍"
     definition: str = "强大的人工智能"
     llm_id: int
+    model_name: str
     plugins_option: list[dict]
     quick_question: list[str]
     answer_mode: AnswerMode
@@ -35,6 +37,7 @@ class UpdateSecretaryReqData(CommonPydanticUpdate):
     introduce: str
     definition: str
     llm_id: int
+    model_name: str
     plugins_option: list[dict]
     quick_question: list[str]
     answer_mode: AnswerMode
@@ -90,6 +93,7 @@ async def create_secretary(request_data: CreateSecretaryReqData, admin: Admin = 
     name = request_data.name
     category_id = request_data.category_id
     llm_id = request_data.llm_id
+    model_name = request_data.model_name
     able_list = request_data.able_list
 
     query_secretary = await Secretary.filter(name=name).first()
@@ -103,6 +107,9 @@ async def create_secretary(request_data: CreateSecretaryReqData, admin: Admin = 
     llm_result, llm = await query_llm(llm_id=llm_id)
     if not llm_result:
         return api_response(code=10002, message=f"模型 {llm_id} 不存在")
+
+    if not await check_model_name(llm=llm, model_name=model_name):
+        return api_response(code=10002, message=f"LLM {llm.name} 中没有可用模型 {model_name}")
 
     able_list_result, secretary_able_list = await query_able_list(ids=able_list)
     if not able_list_result:
@@ -122,6 +129,7 @@ async def update_secretary(request_data: UpdateSecretaryReqData, admin: Admin = 
     secretary_id = request_data.id
     category_id = request_data.category_id
     llm_id = request_data.llm_id
+    model_name = request_data.model_name
     able_list = request_data.able_list
 
     secretary = await Secretary.get_or_none(id=secretary_id)
@@ -135,6 +143,9 @@ async def update_secretary(request_data: UpdateSecretaryReqData, admin: Admin = 
     llm_result, llm = await query_llm(llm_id=llm_id)
     if not llm_result:
         return api_response(code=10002, message=f"模型 {llm_id} 不存在")
+
+    if not await check_model_name(llm=llm, model_name=model_name):
+        return api_response(code=10002, message=f"LLM {llm.name} 中没有可用模型 {model_name}")
 
     able_list_result, secretary_able_list = await query_able_list(ids=able_list)
     if not able_list_result:

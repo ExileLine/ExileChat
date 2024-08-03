@@ -35,6 +35,7 @@ class Secretary(CustomBaseModel):
     definition = fields.TextField(null=True, description='定义-prompt')
     llm_id = fields.BigIntField(null=True, description='大模型ID')
     llm_option = fields.JSONField(null=True, description='大模型-模型选项')
+    model_name = fields.CharField(max_length=32, null=True, description='模型名称-gpt4...')
     plugins_option = fields.JSONField(null=True, description='插件选项')
     quick_question = fields.JSONField(null=True, description='快捷提问列表')
     answer_mode = fields.CharField(max_length=128, null=True, description='应答模式:free;stint;compatible')

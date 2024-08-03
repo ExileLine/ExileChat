@@ -42,6 +42,14 @@ async def query_able_list(ids) -> (bool, list[Able]):
         return True, able_list
 
 
+async def check_model_name(llm: LLM, model_name: str) -> bool:
+    """检验`model_name`是否在这个`LLM`中"""
+
+    if model_name not in [model.get("model") for model in llm.model_list]:
+        return False
+    return True
+
+
 class AnswerMode(str, Enum):
     """应答模式"""
     free = 'free'
