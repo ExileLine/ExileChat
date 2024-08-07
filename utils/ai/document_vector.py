@@ -22,21 +22,21 @@ class DocumentVector:
     5.生成`QA`向量写入数据库
     """
 
-    def __init__(self, document_content: str, llm_engine: LLMEngine, prompt: str = chunks_prompt,
-                 is_debug: bool = False, *args, **kwargs):
+    def __init__(self, document_content: str, llm_engine: LLMEngine, prompt: str = None, is_debug: bool = False):
         """
 
         :param document_content: 文档字符串
         :param llm_engine: 大模型引擎实例
-        :param prompt: 生成`chunks`提示词, 默认: chunks_prompt
+        :param prompt: 生成`chunks`提示词, 默认使用: chunks_prompt()
         :param is_debug: 提示模式, 输出`print`
-        :param args:
-        :param kwargs:
         """
         self.document_content = document_content
         self.document_content_length = len(document_content)
         self.llm_engine = llm_engine
-        self.prompt = prompt
+        if prompt:
+            self.prompt = prompt
+        else:
+            self.prompt = chunks_prompt(original=self.document_content)
         self.is_debug = is_debug
 
         self.gen_chunks_sw = True
@@ -63,9 +63,16 @@ class DocumentVector:
                 self.chunks.append(data)
                 self.chunks_length += len(current_chunk)
                 self.gen_chunks_sw = False
+                if self.is_debug:
+                    print(f"分段完成x: === {strip_chunk} ===")
 
             else:  # 不完整的段落(会因为篇幅太长导致大模型无法相应完整的应答,记录中断之前的段落,再次结合原文补充生成)
                 self.gen_chunks_sw = True
+
+        if "<success>分段完成</success>" in response_chunks:
+            self.gen_chunks_sw = False
+            if self.is_debug:
+                print(f"分段完成y: === {response_chunks} ===")
 
     async def gen_chunks(self):
         """生成`chunks`对象"""
@@ -75,14 +82,22 @@ class DocumentVector:
         while self.gen_chunks_sw:
             print("=== gen_chunks_rounds ===", self.gen_chunks_rounds)
             if self.gen_chunks_rounds == 1:
-                response_chunks = await self.llm_engine.chat_only(prompt=self.prompt, input=self.document_content)
+                response_chunks = await self.llm_engine.chat_only(
+                    prompt=self.prompt,
+                    input="根据原文分段"
+                )
             else:
                 if not self.chunks:
                     raise ValueError("属性 success_chunks 异常")
 
                 content = self.chunks[-1].get("chunk")
-                current_prompt = replenish_prompt(content=content)
-                response_chunks = await self.llm_engine.chat_only(prompt=current_prompt, input=self.document_content)
+                if self.is_debug:
+                    print(f"=== 中断段落 ===\n{content}")
+                current_prompt = replenish_prompt(original=self.document_content, node=content)
+                response_chunks = await self.llm_engine.chat_only(
+                    prompt=current_prompt,
+                    input="根据原文从标签<before>分段"
+                )
 
             if self.is_debug:
                 print(response_chunks)
@@ -90,14 +105,29 @@ class DocumentVector:
             await self.handle_chunks_str(response_chunks=response_chunks)
             self.gen_chunks_rounds += 1
 
-            # 原文长度大于段落总长度，继续执行。
-            if self.document_content_length > self.chunks_length:
-                self.gen_chunks_sw = True
+            if self.is_debug:
+                print(f"原文长度: {self.document_content_length}")
+                print(f"段落累计长度: {self.chunks_length}")
 
-        if self.is_debug:
-            print(json.dumps(self.chunks, ensure_ascii=False))
+            # 原文长度大于段落总长度，继续执行(不严谨的逻辑)。
+            # if self.document_content_length > self.chunks_length:
+            #     self.gen_chunks_sw = True
+
+        await self.get_json_chunks()
 
         return self.chunks
+
+    async def save_chunks(self):
+        """持久化保存`chunks`在数据库中"""
+        pass
+
+    async def get_json_chunks(self):
+        """后去json格式的`chunks`"""
+
+        json_chunks = json.dumps(self.chunks, ensure_ascii=False)
+        if self.is_debug:
+            print(json_chunks)
+        return json_chunks
 
     async def gen_qa(self):
         """生成`QA`"""
