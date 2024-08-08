@@ -9,12 +9,14 @@ from types import MethodType, FunctionType
 
 from openai import OpenAI, AzureOpenAI
 
+from app.models.llm.models import LLM
+
 
 class ModelClient:
     """Models Client"""
 
     api_key: str = None
-    kwargs: dict = {}
+    client_options: dict = {}
 
     @classmethod
     def open_ai(cls):
@@ -27,8 +29,8 @@ class ModelClient:
     def azure_open_ai(cls):
         """AzureOpenAI Client"""
 
-        api_version = cls.kwargs.get("api_version", "2024-02-01")
-        azure_endpoint = cls.kwargs.get("azure_endpoint", "https://by-openai.openai.azure.com/")
+        api_version = cls.client_options.get("api_version", "2024-02-01")
+        azure_endpoint = cls.client_options.get("azure_endpoint", "https://by-openai.openai.azure.com/")
         client = AzureOpenAI(
             api_version=api_version,
             azure_endpoint=azure_endpoint,
@@ -40,7 +42,7 @@ class ModelClient:
     def moonshot(cls):
         """Moonshot Client"""
 
-        base_url = cls.kwargs.get("base_url", "https://api.moonshot.cn/v1")
+        base_url = cls.client_options.get("base_url", "https://api.moonshot.cn/v1")
         client = OpenAI(
             api_key=cls.api_key,
             base_url=base_url,
@@ -51,15 +53,24 @@ class ModelClient:
 class LLMEngine:
     """Large Language Models Engine"""
 
-    def __init__(self, model_name: str = None, api_key: str = None, is_debug: bool = False, *args, **kwargs):
-        self.model_name = model_name
-        self.api_key = api_key
-        self.is_debug = is_debug
-        self.args = args
-        self.kwargs = kwargs
+    default_system_prompt = "你是人工智能助手，你会为用户提供安全，有帮助，准确的回答。"
 
-        ModelClient.api_key = api_key
-        ModelClient.kwargs = kwargs
+    def __init__(self, llm_example: LLM = None, model_name: str = None, api_key: str = None,
+                 client_options: dict = None, system_prompt: str = None, is_debug: bool = False):
+
+        if llm_example:
+            self.model_name = llm_example.model_name
+            self.api_key = llm_example.api_key
+            self.client_options = llm_example.client_options
+            self.system_prompt = llm_example.system_prompt if llm_example.system_prompt else self.default_system_prompt
+        else:
+            self.model_name = model_name
+            self.api_key = api_key
+            self.client_options = client_options
+            self.system_prompt = system_prompt if system_prompt else self.default_system_prompt
+
+        ModelClient.api_key = self.api_key
+        ModelClient.client_options = self.client_options
         self.client_dict = {
             "open_ai": ModelClient.open_ai,
             "azure_open_ai": ModelClient.azure_open_ai,
@@ -67,10 +78,11 @@ class LLMEngine:
         }
         self.client = self.client_init()
 
-        self.system_prompt = "你是人工智能助手，你会为用户提供安全，有帮助，准确的回答。"
         self.system_messages = [{"role": "system", "content": self.system_prompt}]
         self.messages = []
         self.messages_limit = 20
+
+        self.is_debug = is_debug
 
     def client_init(self):
         """Client Init"""
