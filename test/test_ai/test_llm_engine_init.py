@@ -5,6 +5,7 @@
 # @File    : test_llm_engine_only.py
 # @Software: PyCharm
 
+import json
 import asyncio
 
 from fastapi.encoders import jsonable_encoder
@@ -20,7 +21,7 @@ async def main():
     await db_init_pg()
 
     llm = await LLM.get_or_none(id=4)
-    print(jsonable_encoder(llm))
+    print(json.dumps(jsonable_encoder(llm), ensure_ascii=False))
 
     llm_engine = LLMEngine(llm_example=llm)
     generated_message = await llm_engine.chat_only(prompt="你是强大的人工智能", input="你是谁?")

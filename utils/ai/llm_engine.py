@@ -55,15 +55,27 @@ class LLMEngine:
 
     default_system_prompt = "你是人工智能助手，你会为用户提供安全，有帮助，准确的回答。"
 
-    def __init__(self, llm_example: LLM = None, model_name: str = None, api_key: str = None,
+    def __init__(self, llm_example: LLM = None, engine_key: str = None, model_name: str = None, api_key: str = None,
                  client_options: dict = None, system_prompt: str = None, is_debug: bool = False):
+        """
+
+        :param llm_example: `from app.models.llm.models import LLM` 对象，使用LLM模型覆盖以下所有参数。
+        :param engine_key: open_ai、azure_open_ai、moonshot、...
+        :param model_name: gpt4o、gpt4、gpt3.5、...
+        :param api_key: 大模型`ApiKey`
+        :param client_options: 例如 {"api_version": "2024-02-01", "azure_endpoint": "https://by-openai.openai.azure.com/",...}
+        :param system_prompt: 提示词
+        :param is_debug:
+        """
 
         if llm_example:
+            self.engine_key = llm_example.engine_key
             self.model_name = llm_example.model_name
             self.api_key = llm_example.api_key
             self.client_options = llm_example.client_options
             self.system_prompt = llm_example.system_prompt if llm_example.system_prompt else self.default_system_prompt
         else:
+            self.engine_key = engine_key
             self.model_name = model_name
             self.api_key = api_key
             self.client_options = client_options
@@ -87,7 +99,7 @@ class LLMEngine:
     def client_init(self):
         """Client Init"""
 
-        func = self.client_dict.get(self.model_name)
+        func = self.client_dict.get(self.engine_key)
         if isinstance(func, MethodType):
             return func()
         else:
@@ -113,7 +125,7 @@ class LLMEngine:
             {"role": "user", "content": input},
         ]
         completion = self.client.chat.completions.create(
-            model="gpt4o",
+            model=self.model_name,
             messages=messages,
         )
         if completion and completion.choices and len(completion.choices) > 0:
@@ -130,7 +142,7 @@ class LLMEngine:
         await self.make_messages(input=input)
 
         completion = self.client.chat.completions.create(
-            model="gpt4o",
+            model=self.model_name,
             messages=self.messages,
             stream=True
         )
