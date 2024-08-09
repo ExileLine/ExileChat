@@ -2,7 +2,7 @@
 # @Time    : 2024/7/29 02:09
 # @Author  : yangyuexiong
 # @Email   : yang6333yyx@126.com
-# @File    : document_vector.py
+# @File    : document_chunk_vector.py
 # @Software: PyCharm
 
 import json
@@ -10,9 +10,11 @@ import json
 from utils.ai.llm_engine import LLMEngine
 from utils.ai.prompt.chunks_prompt import chunks_prompt, replenish_prompt
 from utils.ai.prompt.qa_prompt import qa_prompt
+from app.models.chunk.models import Chunk
+from app.models.qa.models import QA
 
 
-class DocumentVector:
+class DocumentChunkVector:
     """
     文档向量
     1.接收已经处理好的文档字符串
@@ -22,7 +24,8 @@ class DocumentVector:
     5.生成`QA`向量写入数据库
     """
 
-    def __init__(self, document_content: str, llm_engine: LLMEngine, prompt: str = None, is_debug: bool = False):
+    def __init__(self, document_content: str, llm_engine: LLMEngine, prompt: str = None, is_debug: bool = False,
+                 db_init: bool = False):
         """
 
         :param document_content: 文档字符串
@@ -38,6 +41,7 @@ class DocumentVector:
         else:
             self.prompt = chunks_prompt(original=self.document_content)
         self.is_debug = is_debug
+        self.db_init = db_init
 
         self.gen_chunks_sw = True
         self.gen_chunks_rounds = 1
@@ -55,13 +59,13 @@ class DocumentVector:
             strip_chunk = chunk.strip()
 
             if "</chunks>" in strip_chunk:  # 完整的段落
-                current_chunk = strip_chunk.replace("</chunks>", "")
+                content = strip_chunk.replace("</chunks>", "")
                 data = {
                     "index": index,
-                    "chunk": current_chunk
+                    "content": content
                 }
                 self.chunks.append(data)
-                self.chunks_length += len(current_chunk)
+                self.chunks_length += len(content)
                 self.gen_chunks_sw = False
                 if self.is_debug:
                     print(f"分段完成x: === {strip_chunk} ===")
@@ -90,7 +94,7 @@ class DocumentVector:
                 if not self.chunks:
                     raise ValueError("属性 success_chunks 异常")
 
-                content = self.chunks[-1].get("chunk")
+                content = self.chunks[-1].get("content")
                 if self.is_debug:
                     print(f"=== 中断段落 ===\n{content}")
                 current_prompt = replenish_prompt(original=self.document_content, node=content)
@@ -119,7 +123,10 @@ class DocumentVector:
 
     async def save_chunks(self):
         """持久化保存`chunks`在数据库中"""
-        pass
+
+        for data in self.chunks:
+            chunk = Chunk(**data)
+            await chunk.save()
 
     async def get_json_chunks(self):
         """后去json格式的`chunks`"""
@@ -138,7 +145,7 @@ class DocumentVector:
 
         if self.chunks:
             for index, sc in enumerate(self.chunks):
-                chunk = sc.get("chunk")
+                chunk = sc.get("content")
                 if self.is_debug:
                     print(index, chunk)
                 qa_list_str = await self.llm_engine.chat_only(prompt=current_prompt, input=chunk)
@@ -181,3 +188,23 @@ class DocumentVector:
             print(self.qa_vector)
 
         return self.qa_vector
+
+    async def save_qa(self):
+        """持久化保存`QA`在数据库中"""
+
+        for data in self.qa_vector:
+            qa = QA(**data)
+            await qa.save()
+
+    async def test(self):
+        """test"""
+
+        if self.db_init:
+            from utils.db_connect import db_init_pg
+            await db_init_pg()
+
+        await self.gen_chunks()
+        await self.save_chunks()
+        await self.gen_qa()
+        await self.gen_qa_vector()
+        await self.save_qa()

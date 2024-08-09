@@ -2,7 +2,7 @@
 # @Time    : 2024/7/27 16:50
 # @Author  : yangyuexiong
 # @Email   : yang6333yyx@126.com
-# @File    : document_chunk.py
+# @File    : document_parser.py
 # @Software: PyCharm
 
 
@@ -21,8 +21,8 @@ from tabulate import tabulate
 # import pdfplumber
 
 
-class DocumentChunk:
-    """文档切片分块"""
+class DocumentParser:
+    """文档内容解析提取"""
 
     def __init__(self, image_base_path: str = None, image_base_url: str = None, is_debug: bool = False):
         self.image_base_path = image_base_path  # 图片存储磁盘目录路径
