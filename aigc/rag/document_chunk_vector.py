@@ -7,9 +7,10 @@
 
 import json
 
-from utils.ai.llm_engine import LLMEngine
-from utils.ai.prompt.chunks_prompt import chunks_prompt, replenish_prompt
-from utils.ai.prompt.qa_prompt import qa_prompt
+from aigc.llm_chat.llm_chat import AigcChat
+from aigc.llm_embedding.llm_embedding import AigcEmbedding
+from aigc.prompt.chunks_prompt import chunks_prompt, replenish_prompt
+from aigc.prompt.qa_prompt import qa_prompt
 from app.models.chunk.models import Chunk
 from app.models.qa.models import QA
 
@@ -19,23 +20,25 @@ class DocumentChunkVector:
     文档向量
     1.接收已经处理好的文档字符串
     2.接收大模型引擎`LLMEngine`实例
-    3.使用`LLMEngine`结合`prompt`文档生成`chunks`
-    4.使用`LLMEngine`结合`prompt`对段落生成`QA`
-    5.生成`QA`向量写入数据库
+    3.使用`llm_chat`结合`prompt`文档生成`chunks`
+    4.使用`llm_chat`结合`prompt`对段落生成`QA`
+    5.使用`llm_embedding`生成`QA`向量写入数据库
     """
 
-    def __init__(self, document_content: str, llm_engine: LLMEngine, prompt: str = None, is_debug: bool = False,
-                 db_init: bool = False):
+    def __init__(self, document_content: str, llm_chat: AigcChat, llm_embedding: AigcEmbedding, prompt: str = None,
+                 is_debug: bool = False, db_init: bool = False):
         """
 
         :param document_content: 文档字符串
-        :param llm_engine: 大模型引擎实例
+        :param llm_chat: 大模型Chat实例
+        :param llm_embedding: 大模型向量实例
         :param prompt: 生成`chunks`提示词, 默认使用: chunks_prompt()
         :param is_debug: 提示模式, 输出`print`
         """
         self.document_content = document_content
         self.document_content_length = len(document_content)
-        self.llm_engine = llm_engine
+        self.llm_chat = llm_chat
+        self.llm_embedding = llm_embedding
         if prompt:
             self.prompt = prompt
         else:
@@ -86,7 +89,7 @@ class DocumentChunkVector:
         while self.gen_chunks_sw:
             print("=== gen_chunks_rounds ===", self.gen_chunks_rounds)
             if self.gen_chunks_rounds == 1:
-                response_chunks = await self.llm_engine.chat_only(
+                response_chunks = await self.llm_chat.chat_only(
                     prompt=self.prompt,
                     input="根据原文分段"
                 )
@@ -98,7 +101,7 @@ class DocumentChunkVector:
                 if self.is_debug:
                     print(f"=== 中断段落 ===\n{content}")
                 current_prompt = replenish_prompt(original=self.document_content, node=content)
-                response_chunks = await self.llm_engine.chat_only(
+                response_chunks = await self.llm_chat.chat_only(
                     prompt=current_prompt,
                     input="根据原文从标签<before>分段"
                 )
@@ -129,7 +132,7 @@ class DocumentChunkVector:
             await chunk.save()
 
     async def get_json_chunks(self):
-        """后去json格式的`chunks`"""
+        """获取json格式的`chunks`"""
 
         json_chunks = json.dumps(self.chunks, ensure_ascii=False)
         if self.is_debug:
@@ -148,7 +151,7 @@ class DocumentChunkVector:
                 chunk = sc.get("content")
                 if self.is_debug:
                     print(index, chunk)
-                qa_list_str = await self.llm_engine.chat_only(prompt=current_prompt, input=chunk)
+                qa_list_str = await self.llm_chat.chat_only(prompt=current_prompt, input=chunk)
                 if qa_list_str:
                     try:
                         qa_list = json.loads(qa_list_str)
@@ -171,8 +174,8 @@ class DocumentChunkVector:
                 question = qa.get("Q")
                 answer = qa.get("A")
                 chunks = qa.get("chunks")
-                question_embedding = await self.llm_engine.embedding(text=question)
-                answer_embedding = await self.llm_engine.embedding(text=answer)
+                question_embedding = await self.llm_embedding.embedding(text=question)
+                answer_embedding = await self.llm_embedding.embedding(text=answer)
                 data = {
                     "able_id": 0,
                     "document_id": 0,

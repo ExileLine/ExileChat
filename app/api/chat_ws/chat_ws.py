@@ -11,9 +11,10 @@ from fastapi import APIRouter, WebSocket, Depends, status
 from fastapi.responses import HTMLResponse
 
 from common.libs.custom_exception import CustomException
-from utils.ai.llm_engine import LLMEngine
+from aigc.llm_engine.llm_engine import LLMEngine
+from aigc.llm_chat.llm_chat import AigcChat
 from app.models.chat.models import Chat
-from api_key import api_key
+from api_key import api_key, azure_endpoint
 
 chat_ws_router = APIRouter()
 
@@ -113,10 +114,19 @@ async def chat(websocket: WebSocket):
             data = await websocket.receive_text()
             await websocket.send_text(f"用户: {user} token: {token} 对话: {chat_id} 消息: {data}\n")
 
-            llm_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key)
-            llm_engine.system_prompt = "你是一名Python专家"
-            response_generator = llm_engine.chat(input=data)
+            llm_engine = LLMEngine(
+                company='azure_open_ai',
+                api_key=api_key,
+                client_options={
+                    "api_version": "2024-02-01",
+                    "azure_endpoint": azure_endpoint
+                }
+            )
+            aigc_chat = AigcChat(client=llm_engine.client, model="gpt4o")
+            aigc_chat.system_prompt = "你是一名Python专家"
+            response_generator = aigc_chat.chat_many(input=data)
 
+            # TODO 结合上下文应答
             async for chunk in response_generator:
                 if isinstance(chunk, str):
                     await sleep(0.1)
