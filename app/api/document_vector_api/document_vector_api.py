@@ -11,8 +11,14 @@ from all_reference import *
 from app.models.admin.models import Admin
 from app.models.able.models import Able
 from app.models.document.models import Document
-from utils.ai.llm_engine import LLMEngine
-from utils.ai.process_vector.process_vector import ProcessVector
+from app.models.llm.models import LLM
+from aigc.llm_engine.llm_engine import LLMEngine
+from aigc.llm_chat.llm_chat import AigcChat
+from aigc.llm_embedding.llm_embedding import AigcEmbedding
+from aigc.rag.process_vector import ProcessVector
+from config.config import get_config
+
+project_config = get_config()
 
 document_router = APIRouter()
 
@@ -21,6 +27,8 @@ UPLOAD_DIR = os.getcwd() + "/app/static"
 
 class GeneDocumentVectorReqData(CommonPydanticCreate):
     id: int
+    llm_id: int
+    able_id: int
 
 
 @document_router.post("/upload")
@@ -74,9 +82,35 @@ async def gene_document_vector(
     if not document:
         return api_response(code=10002, message=f"文档 {document_id} 不存在")
 
-    from api_key import api_key
-    llm_engine = LLMEngine(model_name='azure_open_ai', api_key=api_key)
-    pv = ProcessVector(document=document, llm_engine=llm_engine)
-    # await pv.main()
+    llm_id = request_data.llm_id
+    llm_example = await LLM.get_or_none(id=llm_id)
+    if not llm_example:
+        return api_response(code=10002, message=f"模型 {llm_id} 不存在")
+
+    # engine = LLMEngine(
+    #     company=llm_example.company,
+    #     api_key=llm_example.api_key,
+    #     client_options=llm_example.client_options
+    # )
+
+    # `engine`测试代码
+    from api_key import api_key, azure_endpoint
+    engine = LLMEngine(
+        company='azure_open_ai',
+        api_key=api_key,
+        client_options={
+            "api_version": "2024-02-01",
+            "azure_endpoint": azure_endpoint
+        }
+    )
+    aigc_chat = AigcChat(client=engine.client, model="gpt4o")
+    aigc_embedding = AigcEmbedding(client=engine.client, model="embedding002")
+
+    pv = ProcessVector(
+        document=document,
+        aigc_chat=aigc_chat,
+        aigc_embedding=aigc_embedding,
+        is_debug=project_config.DEBUG
+    )
     background_tasks.add_task(pv.main)
     return api_response()
